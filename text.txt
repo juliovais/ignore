@@ -1,0 +1,133 @@
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.yourapp.ui.theme.YourAppTheme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            YourAppTheme {
+                Surface(
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    MixedText(
+                        phoneNumber = "+1234567890",
+                        email = "example@email.com",
+                        onPhoneClick = { phone ->
+                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                data = Uri.parse("tel:$phone")
+                            }
+                            startActivity(intent)
+                        },
+                        onEmailClick = { email ->
+                            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:$email")
+                            }
+                            startActivity(intent)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MixedText(
+    phoneNumber: String,
+    email: String,
+    onPhoneClick: (String) -> Unit,
+    onEmailClick: (String) -> Unit
+) {
+    // Build an AnnotatedString with non-clickable and clickable parts
+    val annotatedString = buildAnnotatedString {
+        append("For more information, contact us via phone or email.\n\n")
+
+        // Non-clickable part
+        append("Phone: ")
+
+        // Clickable phone number
+        withStyle(style = SpanStyle(color = Color.Blue)) {
+            pushStringAnnotation(tag = "PHONE", annotation = phoneNumber)
+            append(phoneNumber)
+            pop()
+        }
+
+        // Non-clickable part
+        append("\nEmail: ")
+
+        // Clickable email
+        withStyle(style = SpanStyle(color = Color.Blue)) {
+            pushStringAnnotation(tag = "EMAIL", annotation = email)
+            append(email)
+            pop()
+        }
+
+        append("\nFeel free to reach out anytime!")
+    }
+
+    // Handle click events
+    ClickableText(
+        text = annotatedString,
+        onClick = { offset ->
+            // Handle phone number click
+            annotatedString.getStringAnnotations(tag = "PHONE", start = offset, end = offset)
+                .firstOrNull()?.let { annotation ->
+                    onPhoneClick(annotation.item)
+                }
+            // Handle email click
+            annotatedString.getStringAnnotations(tag = "EMAIL", start = offset, end = offset)
+                .firstOrNull()?.let { annotation ->
+                    onEmailClick(annotation.item)
+                }
+        }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+    YourAppTheme {
+        MixedText(
+            phoneNumber = "+1234567890",
+            email = "example@email.com",
+            onPhoneClick = {},
+            onEmailClick = {}
+        )
+    }
+}
+
+Explanation:
+
+    Combining Non-Clickable and Clickable Parts:
+        In the AnnotatedString, we append non-clickable text (like "For more information, contact us via phone or email.") using the regular append method.
+        For clickable parts (phone and email), we use withStyle to apply a color and pushStringAnnotation to tag them as clickable.
+
+    Handling Clicks:
+        Inside ClickableText, we detect clicks and differentiate between which part was clicked (phone or email) by checking the tag (PHONE or EMAIL).
+
+    Non-Clickable Text:
+        The non-clickable text remains static, as only the parts wrapped with pushStringAnnotation and withStyle are interactive.
+
+    Final Composition:
+        The final text looks like this:
+            Non-clickable introduction text ("For more information, contact us...")
+            Clickable phone number and email sections.
+            Non-clickable conclusion text.
+
+Output:
+
+The non-clickable text acts as normal text, while the phone number and email are clickable, opening the appropriate dialer or email client when clicked.
